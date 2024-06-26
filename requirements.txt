@@ -1,0 +1,5 @@
+pyaudio
+pyttsx4
+SpeechRecognition
+rapidfuzz
+spacy

@@ -1,0 +1,48 @@
+from datetime import datetime
+import spacy
+
+class NLPDemo():
+
+    def __init__(self):
+        print(f"Please Wait...loading model...")
+        begin_load = datetime.now()
+        self.__nlp = spacy.load("en_core_web_sm")
+        time_taken = datetime.now() - begin_load
+        print(f"...Finished loading.<{time_taken}>")
+
+    def getNamesByPartsOfSpeech(self, speech):
+        names = []
+        doc = self.__nlp(speech)
+        for token in doc:
+            print(f"{token.text:10s}, {token.lemma_:10s}, {token.pos_:10s}, {token.tag_:5s}, {token.dep_:10s}, {token.shape_:10s}, {token.is_alpha}, {token.is_stop}")
+            if token.pos_ in ["PROPN"]:
+                names.append(token.text)
+        name = " ".join(names)
+        return name
+    
+    def getNameByEntityType(self, speech):
+        names = []
+        doc = self.__nlp(speech)
+        print("Entities found: ")
+        for ent in doc.ents:
+            print(ent.text, ent.start_char, ent.end_char, ent.label_)
+            if ent.label_ == "PERSON":
+                names.append(ent.text)
+        name = " ".join(names)
+        return name
+
+def main():
+    nlpDemo = NLPDemo()
+
+    sentence = 'Hello! Introducing the infamous John Michael Anthony Elias Smith-Jones. How are you today?'
+    print(f">>> Process: {sentence}")
+    name = nlpDemo.getNamesByPartsOfSpeech(sentence)
+    print(f">>> Name by Speech found: {name}")
+
+    sentence = 'Hello! Introducing the infamous John Michael Anthony Elias Smith-Jones. I love swimming, jumping, running and althletics?'
+    print(f">>> Process: {sentence}")
+    name = nlpDemo.getNameByEntityType(sentence)
+    print(f">>> Name by Speech found: {name}")
+
+if __name__ == "__main__":
+    main()
