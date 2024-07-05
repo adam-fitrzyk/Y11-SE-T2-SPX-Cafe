@@ -1,5 +1,5 @@
 from Avatar import Avatar
-from Customer2 import Customer
+from Customer import Customer
 from NLPDemo import NLPDemo
 from time import time
 

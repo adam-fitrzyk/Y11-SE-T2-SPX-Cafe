@@ -1,69 +1,132 @@
-from Database import Database
-# from Orders import Orders
+from Orders import Order, OrderItem
+from SPXCafe import SPXCafe
 
-class Customer(Database):
-    def __init__(self, dbname, userName=None) -> None:
-        self.customerId = None
-        self.userName   = None
-        self.firstName  = None
-        self.lastName   = None
-        self.orders     = []
+class Customer(SPXCafe):
+    
+    def __init__(self, username=None, customerId=None, firstname=None, lastname=None):
+        '''Constructor Method:
+        Arguments:
+            - must be either username or customerId if existing
+            - no customerId if new Customer requested
+        '''
+        super().__init__()
+        self.__first_name = firstname
+        self.__last_name = lastname
+        if self.existsDB():
+            self.setCustomer(username, customerId)
+            self.setOrders()
+    
+    def getFirstName(self):
+        return self.__first_name
+    
+    def getLastName(self):
+        return self.__last_name
+    
+    def getUserName(self):
+        return self.__username
+    
+    def getCustomerId(self):
+        return self.__customer_id
 
-        if dbname:
-            self.dbname = dbname
-            super().__init__(dbname)
-            if userName:
-                if not self.setCustomer(userName):
-                    print(f"Customer: Invalid Username provided - {userName}")
-        else:
-            print(f"Customer: Database invalid: {dbname}")
-
-    # ----- Set up customer object data ----- #
-
-    def setCustomer(self, userName=None) -> bool:
+    def getName(self):
+        return f"{self.__first_name.title()} {self.__last_name.title()}"
+    
+    def setUserName(self, username):
+        self.__user_name = username
+    
+    def existsDB(self):
+        '''Check if object already exists in database '''
         retcode = False
-        if userName:
-            sql = f"""
-                SELECT customerId, userName, firstName, lastName
-                FROM customer
-                WHERE userName = '{userName}'
-                ORDER BY customerId
-            """
-            customerData = self.dbGetData(sql)
-
-            if customerData:
-                for customer in customerData:
-                    self.customerId = customer['customerId']
-                    self.userName   = customer['userName']
-                    self.firstName  = customer['firstName']
-                    self.lastName   = customer['lastName']
-                    retcode = True
-            else:
-                self.customerId = None
-                self.userName   = None
-                self.firstName  = None
-                self.lastName   = None
-                print(f"Customer: '{userName}' not found")
-
+        sql = None
+        if self.getCustomerId():
+            sql = f"SELECT count(*) AS count FROM customers WHERE cutomerId={self.getCustomerId()}"
+        elif self.getUserName():
+            sql = f"SELECT count(*) AS count FROM customers WHERE userName='{self.getUserName()}'"
+        if sql:
+            countData = self.dbGetData(sql)
+            count = int(countData['count'])
+            if count > 0:
+                retcode = True
         return retcode
     
-    # ----- Get customer data ----- #
+    def setCustomer(self, user_name=None, customerId=None):
+        '''Creates Customer Object from database info
+        Arguments: either user_name or customerId'''
+        if user_name:
+            self.__user_name = user_name
+        if customerId:
+            self.__customer_id = customerId
+        customerData = None
+        if self.getCustomerId(): # Customer must exist
+            sql = f'''
+            SELECT customerId, userName, firstName, lastName
+            FROM customers
+            WHERE customerId = {self.getCustomerId()}
+            ORDER BY customerId
+            '''
+        elif self.getUserName():
+            sql = f'''
+            SELECT customerId, userName, firstName, lastName
+            FROM customers
+            WHERE userName = '{self.getUserName()}'
+            ORDER BY customerId
+            '''
+        customerData = self.dbGetData(sql)
 
-    def getCustomerName(self) -> str:
-        if self.customerId:
-            return f"{self.firstName} {self.lastName}"
+        if customerData:
+            # Existing Customer - should only be ONE customer
+            self.__customer_id = customerData[0]['customerId']
+            self.__username = customerData[0]['userName']
+            self.__first_name = customerData[0]['firstName']
+            self.__last_name = customerData[0]['lastName']
 
-    def getCustomerId(self) -> int:
-        return self.customerId
+    def saveNewCustomer(self) -> None:
+        '''Inserts a new customer entry into the customer database. '''
+        sql = f"""
+            INSERT INTO customers
+            (userName, firstName, lastName)
+            VALUES
+            ({self.__user_name}, {self.__first_name}, {self.__last_name})
+        """
+        self.__customer_id = self.dbPutData(sql)
+
+    def setOrders(self) -> None:
+        self.__orders = []
+        if self.existsDB():
+            sql = f"""
+                SELECT orderId, orderDate
+                FROM orders
+                WHERE customerId={self.__customer_id}
+                ORDER BY orderDate
+            """
+            orderData = self.dbGetData(sql)
+
+            if orderData:
+                for orderRecord in orderData:
+                    order = Order(orderId=orderRecord['orderId'])
+                    self.__orders.append(order)
     
-    # ----- Formatted displays ----- #
+    @classmethod
+    def findUser(cls, user_name=None):
+        '''Returns the customer id of the customer profile by username. '''
+        customerId = None
+        if user_name:
+            sql = f"""
+                SELECT customerId
+                FROM customers
+                WHERE userName={user_name}
+            """
+            customerData = SPXCafe().dbGetData(sql)
+            if customerData:
+                customerId = customerData['customerId']
+        return customerId
     
-    def displayCustomer(self) -> None:
-        print(f"Customer: ({self.customerId}) - {self.getCustomerName()} <{self.userName}>")
+    def display(self):
+        print(f"Customer: ({self.__customer_id}) - {self.getName()} <{self.__user_name}>")
+        
 
 def main() -> None:
-    bloggs = Customer("SPX_Cafe.db", "bloggs")
-    bloggs.displayCustomer()
+    pass
 
 if __name__ == "__main__":
     main()

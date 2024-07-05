@@ -1,6 +1,6 @@
 from SPXCafe import SPXCafe
 from Avatar import Avatar
-from Customer2 import Customer
+from Customer import Customer
 from Menu import Menu
 from NLPDemo import NLPDemo
 from rapidfuzz import fuzz, process, utils

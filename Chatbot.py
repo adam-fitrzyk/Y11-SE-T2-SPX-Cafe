@@ -1,6 +1,6 @@
 from Avatar import Avatar
 from Menu import Menu
-from Customer2 import Customer
+from Customer import Customer
 #from NLPDemo import NLPDemo
 from rapidfuzz.fuzz import partial_ratio
 from rapidfuzz.utils import default_process
