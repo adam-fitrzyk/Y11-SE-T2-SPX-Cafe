@@ -1,5 +1,4 @@
-# from Order import Order
-# from OrderItem import Orderitem
+from Orders import Order, OrderItem
 from SPXCafe import SPXCafe
 
 class Customer(SPXCafe):
@@ -11,9 +10,10 @@ class Customer(SPXCafe):
             - no customerId if new Customer requested
         '''
         super().__init__()
-
-        self.setCustomer(username, customerId, firstname, lastname)
-        # self.setOrders()
+        self.__first_name = firstname
+        self.__last_name = lastname
+        self.setCustomer(username, customerId)
+        self.setOrders()
 
         if self.existsDB():
             self.setCustomer()
@@ -47,7 +47,7 @@ class Customer(SPXCafe):
     
     def setCustomer(self, user_name=None, customerId=None):
         '''Creates Customer Object from database info
-        Arugments: either user_name or customerId'''
+        Arguments: either user_name or customerId'''
         if user_name:
             self.__user_name = user_name
         if customerId:
@@ -75,7 +75,27 @@ class Customer(SPXCafe):
             self.__username = customerData[0]['userName']
             self.__first_name = customerData[0]['firstName']
             self.__last_name = customerData[0]['lastName']
-            retcode = True
+        else:
+            print(f"Customer Database Error: no customer exists for id <{self.getCustomerId()}> or username <{self.getUserName()}> ")
+
+    def newCustomer(self) -> None:
+        pass
+
+    def setOrders(self) -> None:
+        self.__orders = []
+        if self.existsDB():
+            sql = f"""
+                SELECT orderId, orderDate
+                FROM orders
+                WHERE customerId={self.__customer_id}
+                ORDER BY orderDate
+            """
+            orderData = self.dbGetData(sql)
+
+            if orderData:
+                for orderRecord in orderData:
+                    order = Order(customerId=self.__customer_id)
+                    self.__orders.append(order)
     
     @classmethod
     def findUser(cls, user_name=None):

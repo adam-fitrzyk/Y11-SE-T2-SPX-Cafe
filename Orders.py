@@ -1,21 +1,36 @@
-import SPXCafe
+from SPXCafe import SPXCafe
+from Meal import Meal
 
-class OrderItem(SPXCafe.SPXCafe):
-    '''Singular mealtype OrderItem Object. Order Id must be set before OrderItem can be saved. '''
+class OrderItem(SPXCafe):
+    '''Order Item Object for storing single meal type of an order. Order Id must be set before OrderItem can be saved. '''
 
-    def __init__(self, mealId, quantity) -> None:
+    def __init__(self, mealId=None, quantity=None, orderItemId=None) -> None:
         super().__init__()
-        self.setOrderItem(mealId, quantity)
+        self.setOrderItem(mealId, quantity, orderItemId)
 
-    def setOrderItem(self, mealId, quantity) -> None:
-        if quantity < 1:
-            print("OrderItem error: quantity must be greater than zero ")
-        elif mealId:
-            sql = f"SELECT count(*) AS count FROM meals WHERE mealId={mealId}"
-            countData = self.dbGetData(sql)
-            if countData:
-                count = int(countData['count'])
-                if count > 0: 
+    def setOrderItem(self, mealId, quantity, orderItemId) -> None:
+        '''If orderItemId is given, retrieves data from database, otherwise sets new OrderItem instance. '''
+        if orderItemId:
+            self.__item_id = orderItemId
+            sql = f"""
+                SELECT orderId, mealId, quantity, mealPrice
+                FROM orderItems
+                WHERE orderItemId={self.__item_id}
+                ORDER BY orderItemId
+            """
+            orderItemData = self.dbGetData(sql)
+            if orderItemData:
+                self.__order_id = orderItemData['orderId']
+                self.__meal_id = orderItemData['mealId']
+                self.__quantity = orderItemData['quantity']
+            else:
+                print(f"OrderItem Database Error: no order item with id <{self.__item_id}>")
+        else:
+            if quantity < 1:
+                print("OrderItem error: quantity must be greater than zero ")
+            elif mealId:
+                meal = Meal(mealId=mealId)
+                if meal.exists_db():
                     self.__item_id = None
                     self.__meal_id = mealId 
                     self.__quantity = quantity   
@@ -44,6 +59,7 @@ class OrderItem(SPXCafe.SPXCafe):
         return self.__meal_price * self.__quantity
     
     def existsDB(self) -> bool:
+        '''Checks if the order item exists by order item id. '''
         retcode = False
         if self.__item_id:
             sql = f"SELECT count(*) AS count FROM orderItems WHERE orderItemId={self.__item_id}"
@@ -55,6 +71,7 @@ class OrderItem(SPXCafe.SPXCafe):
         return retcode
 
     def save(self) -> None:
+        '''If order id has been set: if order item already exists, updates information, otherwise creates new entry in database and sets order item id. '''
         try:
             self.__order_id
         except:
@@ -78,20 +95,50 @@ class OrderItem(SPXCafe.SPXCafe):
                 """
                 self.__item_id = self.dbPutData(sql)
 
+    @classmethod
+    def getOrderItems(cls, orderId) -> list:
+        '''Class Method: Returns a list of OrderItem objects with order id given. '''
+        orderItems = []
+        sql = f"""
+            SELECT orderItemId
+            FROM orderItems
+            WHERE orderId={orderId}
+            ORDER BY orderItemId
+        """
+        orderItemData = SPXCafe().dbGetData(sql)
+        for orderItemRecord in orderItemData:
+            orderItem = OrderItem(orderItemId=orderItemRecord['orderItemId'])
+            orderItems.append(orderItem)
+        return orderItems
 
-class Order(SPXCafe.SPXCafe):
+
+class Order(SPXCafe):
     '''Order Object for storing a single order's information. '''
 
-    def __init__(self, customerId) -> None:
+    def __init__(self, orderId=None, customerId=None) -> None:
         super().__init__()
-        self.setOrder(customerId)
+        self.setOrder(orderId, customerId)
 
-    def setOrder(self, customerId) -> None:
-        '''Sets the date to today, sets customer id, and sets order id to None. '''
-        self.__order_id = None
-        self.__items: list[OrderItem] = []
-        self.__date = self.get_today()
-        self.__customer_id = customerId
+    def setOrder(self, orderId, customerId) -> None:
+        '''If order id is given, retrieves data from database, otherwises sets new Order instance. '''
+        if orderId:
+            self.__order_id = orderId
+            sql = f"""
+                SELECT orderDate, customerId
+                FROM orders
+                WHERE orderId={self.__order_id}
+            """
+            orderData = self.dbGetData(sql)
+            if orderData:
+                self.__date = orderData['orderDate']
+                self.__customer_id = orderData['customerId']
+                self.__items = OrderItem.getOrderItems(self.__order_id)
+            else:
+                print(f"Order Database Error: no order with id <{self.__order_id}> ")
+        else:
+            self.__date = self.get_today()
+            self.__customer_id = customerId
+            self.__items: list[OrderItem] = []
 
     def getDate(self) -> str:
         return self.__date
@@ -121,7 +168,7 @@ class Order(SPXCafe.SPXCafe):
         self.__items.append(OrderItem(mealId, quantity))
     
     def existsDB(self) -> bool:
-        '''Checks if the order id already exists in the database. '''
+        '''Checks if the order already exists in the database by id. '''
         retcode = False
         if self.__order_id:
             sql = f"SELECT count(*) AS count FROM orders WHERE orderId={self.__order_id}"
