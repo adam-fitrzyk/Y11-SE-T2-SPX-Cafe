@@ -1,5 +1,4 @@
 import SPXCafe
-from datetime import datetime
 
 class OrderItem(SPXCafe.SPXCafe):
     '''Singular mealtype OrderItem Object. Order Id must be set before OrderItem can be saved. '''
@@ -9,7 +8,9 @@ class OrderItem(SPXCafe.SPXCafe):
         self.setOrderItem(mealId, quantity)
 
     def setOrderItem(self, mealId, quantity) -> None:
-        if mealId:
+        if quantity < 1:
+            print("OrderItem error: quantity must be greater than zero ")
+        elif mealId:
             sql = f"SELECT count(*) AS count FROM meals WHERE mealId={mealId}"
             countData = self.dbGetData(sql)
             if countData:
@@ -86,7 +87,9 @@ class Order(SPXCafe.SPXCafe):
         self.setOrder(customerId)
 
     def setOrder(self, customerId) -> None:
+        '''Sets the date to today, sets customer id, and sets order id to None. '''
         self.__order_id = None
+        self.__items: list[OrderItem] = []
         self.__date = self.get_today()
         self.__customer_id = customerId
 
@@ -99,7 +102,26 @@ class Order(SPXCafe.SPXCafe):
     def getOrderId(self) -> int:
         return self.__order_id
     
+    def getItems(self) -> list[OrderItem]:
+        return self.__items
+    
+    def getTotalPrice(self) -> float:
+        price = 0
+        for item in self.__items:
+            price += item.getPrice()
+        return price
+    
+    def getTotalQuantity(self) -> int:
+        quantity = 0
+        for item in self.__items:
+            quantity += item.getQuantity()
+        return quantity
+    
+    def placeItem(self, mealId, quantity) -> None:
+        self.__items.append(OrderItem(mealId, quantity))
+    
     def existsDB(self) -> bool:
+        '''Checks if the order id already exists in the database. '''
         retcode = False
         if self.__order_id:
             sql = f"SELECT count(*) AS count FROM orders WHERE orderId={self.__order_id}"
@@ -111,12 +133,15 @@ class Order(SPXCafe.SPXCafe):
         return retcode
     
     def save(self) -> None:
+        '''If order already exists in the database, updates the date information, otherwise inserts a new order to the database and sets the order id. '''
         if self.existsDB():
             sql = f"""UPDATE orders SET
                 orderDate={self.__date},
                 WHERE orderId={self.__order_id}
             """
             self.dbChangeData(sql)
+            for item in self.__items:
+                item.save()
         else:
             sql = f"""
                 INSERT INTO orders
@@ -125,6 +150,9 @@ class Order(SPXCafe.SPXCafe):
                 ({self.__date}, {self.__customer_id})
             """
             self.__order_id = self.dbPutData(sql)
+            for item in self.__items:
+                item.setOrderId(self.__order_id)
+                item.save()
 
 
 def main() -> None:
