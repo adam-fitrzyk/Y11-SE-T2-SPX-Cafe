@@ -13,3 +13,11 @@ class SPXCafe(Database):
     
     def get_today(self) -> str:
         return datetime.today().date().strftime('%Y-%m-%d') # ISO format for dates - how sqlite and mysql store dates
+    
+
+def main() -> None:
+    s = SPXCafe()
+    print(s.get_today())
+
+if __name__ == "__main__":
+    main()
