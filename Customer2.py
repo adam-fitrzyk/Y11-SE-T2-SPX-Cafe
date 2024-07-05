@@ -12,11 +12,9 @@ class Customer(SPXCafe):
         super().__init__()
         self.__first_name = firstname
         self.__last_name = lastname
-        self.setCustomer(username, customerId)
-        self.setOrders()
-
         if self.existsDB():
-            self.setCustomer()
+            self.setCustomer(username, customerId)
+            self.setOrders()
     
     def getFirstName(self):
         return self.__first_name
@@ -29,6 +27,9 @@ class Customer(SPXCafe):
     
     def getCustomerId(self):
         return self.__customer_id
+    
+    def setUserName(self, username):
+        self.__user_name = username
     
     def existsDB(self):
         '''Check if object already exists in database '''
@@ -75,11 +76,16 @@ class Customer(SPXCafe):
             self.__username = customerData[0]['userName']
             self.__first_name = customerData[0]['firstName']
             self.__last_name = customerData[0]['lastName']
-        else:
-            print(f"Customer Database Error: no customer exists for id <{self.getCustomerId()}> or username <{self.getUserName()}> ")
 
-    def newCustomer(self) -> None:
-        pass
+    def saveNewCustomer(self) -> None:
+        '''Inserts a new customer entry into the customer database. '''
+        sql = f"""
+            INSERT INTO customers
+            (userName, firstName, lastName)
+            VALUES
+            ({self.__user_name}, {self.__first_name}, {self.__last_name})
+        """
+        self.__customer_id = self.dbPutData(sql)
 
     def setOrders(self) -> None:
         self.__orders = []
@@ -94,7 +100,7 @@ class Customer(SPXCafe):
 
             if orderData:
                 for orderRecord in orderData:
-                    order = Order(customerId=self.__customer_id)
+                    order = Order(orderId=orderRecord['orderId'])
                     self.__orders.append(order)
     
     @classmethod
