@@ -105,7 +105,22 @@ class Customer(SPXCafe):
     
     @classmethod
     def findUser(cls, user_name=None):
-        sql = f"""
-
-        """
+        '''Returns the customer id of the customer profile by username. '''
+        customerId = None
+        if user_name:
+            sql = f"""
+                SELECT customerId
+                FROM customers
+                WHERE userName={user_name}
+            """
+            customerData = SPXCafe().dbGetData(sql)
+            if customerData:
+                customerId = customerData['customerId']
+        return customerId
         
+
+def main() -> None:
+    pass
+
+if __name__ == "__main__":
+    main()
