@@ -27,6 +27,9 @@ class Customer(SPXCafe):
     
     def getCustomerId(self):
         return self.__customer_id
+
+    def getName(self):
+        return f"{self.__first_name.title()} {self.__last_name.title()}"
     
     def setUserName(self, username):
         self.__user_name = username
@@ -117,6 +120,9 @@ class Customer(SPXCafe):
             if customerData:
                 customerId = customerData['customerId']
         return customerId
+    
+    def display(self):
+        print(f"Customer: ({self.__customer_id}) - {self.getName()} <{self.__user_name}>")
         
 
 def main() -> None:
