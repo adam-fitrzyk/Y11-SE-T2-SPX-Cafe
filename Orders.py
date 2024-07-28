@@ -20,9 +20,10 @@ class OrderItem(SPXCafe):
             """
             orderItemData = self.dbGetData(sql)
             if orderItemData:
-                self.__order_id = orderItemData['orderId']
-                self.__meal_id = orderItemData['mealId']
-                self.__quantity = orderItemData['quantity']
+                self.__order_id = orderItemData[0]['orderId']
+                self.__meal_id = orderItemData[0]['mealId']
+                self.__meal_name = Meal(mealId=self.__meal_id).get_meal_name()
+                self.__quantity = orderItemData[0]['quantity']
             else:
                 print(f"OrderItem Database Error: no order item with id <{self.__item_id}>")
         else:
@@ -32,11 +33,10 @@ class OrderItem(SPXCafe):
                 meal = Meal(mealId=mealId)
                 if meal.exists_db():
                     self.__item_id = None
-                    self.__meal_id = mealId 
-                    self.__quantity = quantity   
-                    sql = f"SELECT mealPrice FROM meals WHERE mealId={mealId}"
-                    priceData = self.dbGetData(sql)
-                    self.__meal_price = priceData['mealPrice']
+                    self.__meal_id = mealId
+                    self.__meal_name = meal.get_meal_name()
+                    self.__quantity = quantity  
+                    self.__meal_price = meal.get_meal_price()
                 else:
                     print('Menu Database Error: no meals with given id ')
 
@@ -51,6 +51,9 @@ class OrderItem(SPXCafe):
 
     def getMealId(self) -> int:
         return self.__meal_id
+    
+    def getMealName(self) -> str:
+        return self.__meal_name
 
     def getQuantity(self) -> int:
         return self.__quantity
@@ -65,7 +68,7 @@ class OrderItem(SPXCafe):
             sql = f"SELECT count(*) AS count FROM orderItems WHERE orderItemId={self.__item_id}"
             countData = self.dbGetData(sql)
             if countData:
-                count = int(countData['count'])
+                count = int(countData[0]['count'])
             if count > 0:
                 retcode = True
         return retcode
@@ -110,6 +113,9 @@ class OrderItem(SPXCafe):
             orderItem = OrderItem(orderItemId=orderItemRecord['orderItemId'])
             orderItems.append(orderItem)
         return orderItems
+    
+    def display(self):
+        print(f" - {str(self.__quantity):2s}x {self.__meal_name.title():20s} @ ${self.__meal_price:5.2f} each")
 
 
 class Order(SPXCafe):
@@ -130,8 +136,8 @@ class Order(SPXCafe):
             """
             orderData = self.dbGetData(sql)
             if orderData:
-                self.__date = orderData['orderDate']
-                self.__customer_id = orderData['customerId']
+                self.__date = orderData[0]['orderDate']
+                self.__customer_id = orderData[0]['customerId']
                 self.__items = OrderItem.getOrderItems(self.__order_id)
             else:
                 print(f"Order Database Error: no order with id <{self.__order_id}> ")
@@ -174,13 +180,14 @@ class Order(SPXCafe):
             sql = f"SELECT count(*) AS count FROM orders WHERE orderId={self.__order_id}"
             countData = self.dbGetData(sql)
             if countData:
-                count = int(countData['count'])
+                count = int(countData[0]['count'])
             if count > 0:
                 retcode = True
         return retcode
     
     def save(self) -> None:
-        '''If order already exists in the database, updates the date information, otherwise inserts a new order to the database and sets the order id. '''
+        '''If order already exists in the database, updates the date information, 
+        otherwise inserts a new order to the database and sets the order id. '''
         if self.existsDB():
             sql = f"""UPDATE orders SET
                 orderDate={self.__date},
@@ -201,9 +208,21 @@ class Order(SPXCafe):
                 item.setOrderId(self.__order_id)
                 item.save()
 
+    def display(self):
+        print(f"Order: <{self.__order_id}> {self.__date:>30}")
+        for item in self.__items:
+            item.display()
+        print(f"Total Price: {' '*21} ${self.getTotalPrice():.2f}")
+
 
 def main() -> None:
-    pass
+    ordritm1 = OrderItem(1, 3)
+    ordritm2 = OrderItem(3, 2)
+    ordritm3 = OrderItem(10, 1)
+
+    ordr = Order(orderItems=[ordritm1, ordritm2, ordritm3])
+
+    ordr.display()
 
 if __name__ == "__main__":
     main()

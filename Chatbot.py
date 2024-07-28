@@ -1,18 +1,20 @@
 from Avatar import Avatar
 from Menu import Menu
 from Customer import Customer
-#from NLPDemo import NLPDemo
-from rapidfuzz.fuzz import partial_ratio
+from NLPDemo import NLPDemo
 from rapidfuzz.utils import default_process
 from rapidfuzz.process import extract
 
 class Chatbot:
 
-    def __init__(self):
+    def __init__(self, name, menu_name, cafe_name) -> None:
         '''Constructor Method for Chatbot class '''
-        self.menu = Menu("Italia Forever Lunch Menu")
+        self.nlp = NLPDemo()
+        self.__waiter = Avatar(name)
+        self.__menu = Menu(menu_name)
+        self.cafe_name = cafe_name
         self.exit_request = {
-            "keywords": ["exit", "leave", "bye"],
+            "keywords": ["exit", "leave", "quit"],
             "response": "leave us now"
         }
         self.order_request = {
@@ -20,36 +22,52 @@ class Chatbot:
             "response": "order food"
         }
         self.menu_request = {
-            "keywords": ["menu", "see food"],
+            "keywords": ["menu"],
             "response": "see the menu"
         }
         self.history_request = {
-            "keywords": ["history", "previous", "past"],
+            "keywords": ["order history", "previous", "past"],
             "response": "see order history"
         }
         self.options = {
             "exit":     self.exit_request,
             "order":    self.order_request,
-            "menu":     self.order_request,
+            "menu":     self.menu_request,
             "history":  self.history_request
         }
-        self.waiter = Avatar("Luigi")
-        self.waiter.say("Welcome to Italiabot.")
+        keywords = [self.options[key]["keywords"] for key in self.options]
+        self.keywords = keywords[0] + keywords[1] + keywords[2] + keywords[3]
 
-    def matchOptions(self, choice):
-        '''Choose best match from a list of options '''
-        retlist = []
+         
+    def getCustomer(self) -> None:
+        '''Get a customer - using username typed in for accuracy '''
+        print(self.cafe_name, "Bot")
+        username = self.__waiter.listen("Please enter your username", use_sr=False)
+        print("... Checking our customer database ...")
+        # look up customer -> new customer or welcome back
+        customer_id = Customer.findUser(username)
+        if customer_id:
+            self.__customer = Customer(customerId=customer_id)
+            self.welcomeCustomer(self.__customer.getName())
+        else:
+            self.welcomeCustomer()
+            first_name = None
+            last_name = None
+            while not first_name:
+                inp_name = self.__waiter.listen("Please tell me your first name?", phrase_time_limit=5)
+                first_name = self.nlp.getNamesByPartsOfSpeech(inp_name)
+            while not last_name:
+                inp_name = self.__waiter.listen("Please tell me your last name?", phrase_time_limit=5)
+                last_name = self.nlp.getNamesByPartsOfSpeech(inp_name)
+            self.__customer = Customer(username=username, firstname=first_name, lastname=last_name)
+
+    def matchOptions(self, choice) -> list[str] | None:
+        '''Choose best match from a list of options, returns None unless only one option is matched. '''
+        retlist = set()
         matches = []
         max_confidence = 0
-        is_exit = False
-        is_order = False
-        is_menu = False
-        is_history = False
 
-        keywords = [self.options[key]["keywords"] for key in self.options]
-        keywords = keywords[0] + keywords[1] + keywords[2] + keywords[3]
-
-        results = extract(choice, keywords, processor=default_process)
+        results = extract(choice, self.keywords, processor=default_process)
         for result in results:
             (match, confidence, index) = result
             print(f"Checking: {result}")
@@ -60,63 +78,49 @@ class Chatbot:
                 matches.append(match)
 
         print(f"You have matched: {', '.join(matches)} with confidence level {max_confidence}%")
-        for keyword in self.exit_request["keywords"]:
-            if keyword in matches:
-                retlist.append("leave")
-        for keyword in self.menu_request["keywords"]:
-            if keyword in matches:
-                retlist.append("menu")
-        for keyword in self.order_request["keywords"]:
-            if keyword in matches:
-                retlist.append("order")
-        for keyword in self.history_request["keywords"]:
-            if keyword in matches:
-                retlist.append("history")
 
+        for match in matches:
+            if match in self.exit_request["keywords"]:
+                retlist.add("exit")
+            elif match in self.menu_request["keywords"]:
+                retlist.add("menu")
+            elif match in self.order_request["keywords"]:
+                retlist.add("order")
+            elif match in self.history_request["keywords"]:
+                retlist.add("history")
+                
         if len(retlist) > 1:
-            self.waiter.say(f"Did you mean {', or '.join(retlist)}? Please try again.")
+            self.__waiter.say(f"Did you mean {', or '.join(retlist)}? Please try again.")
         elif retlist:
-            return retlist[0]
-        else:
-            return None
+            return list(retlist)[0]
         
-    def getRequest(self):
+    def getRequest(self) -> str:
+        '''Keep asking the customer to choose an option until they choose just one. '''
         response = None
-        self.waiter.say(f"Ok {self.customer.getFirstName()}. What would you like to do? Order food? See the menu? Look at your order history? Or exit?")
+        self.__waiter.say(f"Ok {self.__customer.getFirstName()}. Tell me what would you like to do... Order food, see the menu, look at your order history, or exit?")
         while not response:
             print("Order food, see the menu, look at your order history, or exit?")
-            option = self.waiter.listen(None, phrase_time_limit=5)
+            option = self.__waiter.listen(None, phrase_time_limit=5)
             response = self.matchOptions(option)
-        match response:
-            case "exit":
-                self.waiter.say(f"You chose to: {self.options["exit"]["response"]}. Thank you, {self.customer.getFirstName()}, for ordering with Italiabot today. Goodbye")
-            case "menu":
-                self.waiter.say(f"You chose to: {self.options["menu"]["response"]}")
-            case "order":
-                self.waiter.say(f"You chose to: {self.options["order"]["response"]}")
-            case "history":
-                self.waiter.say(f"You chose to: {self.options["history"]["response"]}")
+        self.__waiter.say(f"You chose to: {self.options[response]["response"]}")
+        if response == "exit":
+            self.__waiter.say(f"Thank you, {self.__customer.getFirstName()}, for ordering with {self.cafe_name}-bot today! Doh-vee-jeh-nia.")
         return response
-        
-    def getCustomer(self):
-        '''Get a customer - using username typed in for accuracy '''
-        print("Italiabot")
-        username = self.waiter.listen("Please enter your username", use_sr=False)
-        print("... Checking our customer database...")
-        # look up customer -> new customer or welcome back
-        self.customer = Customer(username)
-        
-        self.waiter.say(f"Welcome {self.customer.getFirstName()} {self.customer.getLastName()}")
 
     def displayOrderHistory(self):
-        self.waiter.say(f"Ok, {self.customer.getFirstName()}. Let's show you your previous orders.")
+        self.__waiter.say(f"Ok, {self.__customer.getFirstName()}. Let's show you your previous orders.")
+        self.__customer.displayOrders()
 
     def displayMenu(self):
-        self.waiter.say(f"Alright, {self.customer.getFirstName()}. Let's show you the menu.")
-        self.menu.display()
+        self.__waiter.say(f"Alright, {self.__customer.getFirstName()}. Let's show you the menu.")
+        self.__menu.display()
 
     def orderFood(self):
-        self.waiter.say(f"Prego, {self.customer.getFirstName()}. Let's order some food.")
+        self.__waiter.say(f"Dob-jeh, {self.__customer.getFirstName()}. Let's order some food.")
+        pass
+
+    def welcomeCustomer(self, name=''):
+        self.__waiter.say(f"Jen dough-bray {name}! Welcome to {self.cafe_name}!") # Jen dough-bray -> Dzien dobry -> Good day
 
     def run(self):
         # Get the customer
@@ -126,21 +130,23 @@ class Chatbot:
         running = True
         while running:
             choice = self.getRequest()
-            print(choice)
 
             if choice == "exit":
                 running = False
             elif choice == "history":
                 self.displayOrderHistory()
+                input("Enter anything to go back: ")
             elif choice == "menu":
                 self.displayMenu()
+                input("Enter anything to go back: ")
             elif choice == "order":
                 self.orderFood()
+                input("Enter anything to go back: ")
 
 def main():
-    italiabot = Chatbot()
+    polabot = Chatbot("Agata", "Polander Plates", "Polander Plains")
 
-    italiabot.run()
+    polabot.run()
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,5 @@
 from SPXCafe import SPXCafe
-from Avatar import Avatar
+from Chatbot import Chatbot
 from Customer import Customer
 from Menu import Menu
 from NLPDemo import NLPDemo
@@ -8,31 +8,26 @@ from rapidfuzz.fuzz import partial_ratio
 
 class Cafe(SPXCafe):
 
-    def __init__(self, cafe_name=None) -> None:
+    def __init__(self, cafe_name=None, menu_name=None, waiter_name=None) -> None:
         super().__init__()
-        self.waiter = Avatar("Luigi")
         self.setCafeName(cafe_name)
-        self.menu = Menu('Dinner Menu')
+        self.setChatbot(waiter_name, menu_name, self.getCafeName())
+
+    def setChatbot(self, waiter_name, menu_name):
+        if not waiter_name:
+            waiter_name = "Andrzej"
+        if not menu_name:
+            menu_name = "Polander Plates"
+        self.__chatbot = Chatbot(waiter_name, menu_name)
 
     def setCafeName(self, cafe_name) -> None:
         if cafe_name:
-            self.cafe_name = cafe_name
+            self.__cafe_name = cafe_name
         else:
-            self.cafe_name = 'Italia Corner'
+            self.__cafe_name = 'Polander Plains'
 
     def getCafeName(self) -> str:
-        return
-
-    def welcomeCustomer(self):
-        self.waiter.say(f"Buon Giorno! Welcome to {self.getCafeName()}")
-
-        while True:
-            #user_name = self.waiter.listen("Can you please enter your username? ", use_sr=False)
-            user_name = 'bloggs'
-            self.customer = Customer(user_name)
-            is_customer = None
-            self.waiter.say(f"Welcome back {self.customer.getFirstName()}!")
-            break
+        return self.__cafe_name
 
 
 def main() -> None:

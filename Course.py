@@ -25,7 +25,6 @@ class Course(SPXCafe):
         
         if self.get_course_id():
             sql = f"SELECT courseId, courseName FROM courses WHERE courseId={self.get_course_id()}"
-            print(sql)
             courseData = self.dbGetData(sql)
 
             if courseData: # Course found in database
@@ -87,9 +86,9 @@ class Course(SPXCafe):
     
     def display(self) -> None:
         '''Print the course details'''
-        print(self)
+        print(f"Course: {self.get_course_name().title()}")
         for meal in self.get_meals():
-            print(' -', meal.display())
+            meal.display()
 
     # Persistent Data - Database - Related Methods
     def exists_db(self) -> bool:

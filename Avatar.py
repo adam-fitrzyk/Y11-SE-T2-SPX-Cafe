@@ -36,10 +36,6 @@ class Avatar:
         self.__engine.setProperty('voice', self.__voice)
         self.__engine.setProperty('rate', 150)
         self.__engine.setProperty('volume', 1.0)
-        for voice in self.__voices:
-            print(voice)
-            self.__engine.setProperty('voice', voice.id)
-            self.say(f'This is a voice hello there')
 
     def say(self, speech):
         self.__engine.say(speech, self.name)
@@ -77,7 +73,7 @@ class Avatar:
 # This is our test harness
 def main():
     teacher = Avatar('Bob')
-    teacher.listen('Say something', False)
+    teacher.say("Doh-vee-jeh-nia.")
 
 if __name__ == "__main__":
     main()

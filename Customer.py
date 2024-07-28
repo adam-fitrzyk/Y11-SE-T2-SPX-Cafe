@@ -7,14 +7,22 @@ class Customer(SPXCafe):
         '''Constructor Method:
         Arguments:
             - must be either username or customerId if existing
-            - no customerId if new Customer requested
+            - no customerId if new Customer requested, username, first and last name required
         '''
         super().__init__()
+        if firstname:
+            firstname = firstname.lower()
+        if lastname:
+            lastname = lastname.lower()
         self.__first_name = firstname
         self.__last_name = lastname
+        self.__user_name = username
+        self.__customer_id = customerId
         if self.existsDB():
-            self.setCustomer(username, customerId)
+            self.setCustomer()
             self.setOrders()
+        else:
+            self.saveNewCustomer()
     
     def getFirstName(self):
         return self.__first_name
@@ -23,13 +31,16 @@ class Customer(SPXCafe):
         return self.__last_name
     
     def getUserName(self):
-        return self.__username
+        return self.__user_name
     
     def getCustomerId(self):
         return self.__customer_id
 
     def getName(self):
         return f"{self.__first_name.title()} {self.__last_name.title()}"
+    
+    def getOrders(self):
+        return self.__orders
     
     def setUserName(self, username):
         self.__user_name = username
@@ -38,37 +49,34 @@ class Customer(SPXCafe):
         '''Check if object already exists in database '''
         retcode = False
         sql = None
-        if self.getCustomerId():
-            sql = f"SELECT count(*) AS count FROM customers WHERE cutomerId={self.getCustomerId()}"
-        elif self.getUserName():
-            sql = f"SELECT count(*) AS count FROM customers WHERE userName='{self.getUserName()}'"
+        if self.__customer_id:
+            sql = f"SELECT count(*) AS count FROM customers WHERE customerId={self.__customer_id}"
+        elif self.__user_name:
+            sql = f"SELECT count(*) AS count FROM customers WHERE userName='{self.__user_name}'"
         if sql:
             countData = self.dbGetData(sql)
-            count = int(countData['count'])
-            if count > 0:
-                retcode = True
+            if countData:
+                count = int(countData[0]['count'])
+                if count > 0:
+                    retcode = True
         return retcode
     
-    def setCustomer(self, user_name=None, customerId=None):
-        '''Creates Customer Object from database info
+    def setCustomer(self):
+        '''Creates Customer Object from database info, for if customer already exists
         Arguments: either user_name or customerId'''
-        if user_name:
-            self.__user_name = user_name
-        if customerId:
-            self.__customer_id = customerId
         customerData = None
         if self.getCustomerId(): # Customer must exist
             sql = f'''
             SELECT customerId, userName, firstName, lastName
             FROM customers
-            WHERE customerId = {self.getCustomerId()}
+            WHERE customerId={self.getCustomerId()}
             ORDER BY customerId
             '''
         elif self.getUserName():
             sql = f'''
             SELECT customerId, userName, firstName, lastName
             FROM customers
-            WHERE userName = '{self.getUserName()}'
+            WHERE userName='{self.getUserName()}'
             ORDER BY customerId
             '''
         customerData = self.dbGetData(sql)
@@ -76,7 +84,7 @@ class Customer(SPXCafe):
         if customerData:
             # Existing Customer - should only be ONE customer
             self.__customer_id = customerData[0]['customerId']
-            self.__username = customerData[0]['userName']
+            self.__user_name = customerData[0]['userName']
             self.__first_name = customerData[0]['firstName']
             self.__last_name = customerData[0]['lastName']
 
@@ -86,7 +94,7 @@ class Customer(SPXCafe):
             INSERT INTO customers
             (userName, firstName, lastName)
             VALUES
-            ({self.__user_name}, {self.__first_name}, {self.__last_name})
+            ('{self.__user_name}', '{self.__first_name}', '{self.__last_name}')
         """
         self.__customer_id = self.dbPutData(sql)
 
@@ -114,19 +122,27 @@ class Customer(SPXCafe):
             sql = f"""
                 SELECT customerId
                 FROM customers
-                WHERE userName={user_name}
+                WHERE userName='{user_name}'
             """
             customerData = SPXCafe().dbGetData(sql)
             if customerData:
-                customerId = customerData['customerId']
+                customerId = customerData[0]['customerId']
         return customerId
     
     def display(self):
-        print(f"Customer: ({self.__customer_id}) - {self.getName()} <{self.__user_name}>")
+        print(f"Customer: <{self.__customer_id}> {self.getName()}")
+
+    def displayOrders(self):
+        self.display()
+        print()
+        for order in self.__orders:
+            order.display()
+            print()
         
 
 def main() -> None:
-    pass
+    c = Customer(username='adamiscool')
+    c.displayOrders()
 
 if __name__ == "__main__":
     main()

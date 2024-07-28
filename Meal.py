@@ -84,7 +84,7 @@ class Meal(SPXCafe):
     
     def display(self) -> None:
         '''Formal display Meal'''
-        print(f"Meal: <Course: {self.get_course_id():2d} {self.get_course().get_course_name().title()}, Meal: {self.get_meal_id():2d}> {self.get_meal_name().title():20s} ${self.get_meal_price():5.2f}")
+        print(f" - Meal: {self.get_meal_name().title():20s} ${self.get_meal_price():5.2f}")
 
     def exists_db(self):
         '''Check if object already exists in database'''
@@ -128,7 +128,6 @@ class Meal(SPXCafe):
     def get_meals(cls, course):
         '''Class Method: Gets Meals for a Course object/instance - example of Aggregation'''
         sql = f"SELECT mealId, mealName, mealPrice, courseId FROM meals WHERE courseId={course.get_course_id()}"
-        print(sql)
         mealsData = SPXCafe().dbGetData(sql)
         meals = []
         for mealData in mealsData:

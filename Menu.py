@@ -46,11 +46,13 @@ class Menu(SPXCafe):
     
     def display(self) -> None:
         '''Display this Menu instance more formally '''
-        print(f"{'-'*25} {self.get_menu_name()} {'-'*25}\n")
+        print(f"{'-'*10} {self.get_menu_name()} {'-'*10}\n")
 
-        if self.get_courses():
-            for course in self.get_courses():
+        courses = self.get_courses()
+        if courses:
+            for course in courses:
                 course.display()
+                print()
 
     def display_courses(self) -> None:
         '''Display all the Courses in a comma-seperated string '''
