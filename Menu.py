@@ -64,13 +64,15 @@ class Menu(SPXCafe):
 
     # Adhoc Methods for Menu and aggregated Courses ----------------
 
-    def find_meal(self, searchMeal=None) -> list[list]:
+    def find_meal(self, searchMeal=None) -> list[Meal] | None:
         '''Search through courses in menu for name of meal '''
         meals = []
         if searchMeal:
             for course in self.get_courses():
-                retmeal = course.find_meal(searchMeal)
-                if retmeal:
+                retmeals = course.find_meal(searchMeal)
+                if not retmeals:
+                    continue
+                for retmeal in retmeals:
                     meals.append(retmeal)
         return meals
 

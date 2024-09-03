@@ -23,6 +23,7 @@ class OrderItem(SPXCafe):
                 self.__order_id = orderItemData[0]['orderId']
                 self.__meal_id = orderItemData[0]['mealId']
                 self.__meal_name = Meal(mealId=self.__meal_id).get_meal_name()
+                self.__meal_price = orderItemData[0]['mealPrice']
                 self.__quantity = orderItemData[0]['quantity']
             else:
                 print(f"OrderItem Database Error: no order item with id <{self.__item_id}>")
@@ -115,7 +116,7 @@ class OrderItem(SPXCafe):
         return orderItems
     
     def display(self):
-        print(f" - {str(self.__quantity):2s}x {self.__meal_name.title():20s} @ ${self.__meal_price:5.2f} each")
+        print(f" - {str(self.__quantity):2s}x {self.__meal_name.title():20s} @ ${self.__meal_price:<5.2f} each")
 
 
 class Order(SPXCafe):
@@ -145,6 +146,7 @@ class Order(SPXCafe):
             self.__date = self.get_today()
             self.__customer_id = customerId
             self.__items: list[OrderItem] = []
+            self.__order_id = None
 
     def getDate(self) -> str:
         return self.__date
@@ -201,7 +203,7 @@ class Order(SPXCafe):
                 INSERT INTO orders
                 (orderDate, customerId)
                 VALUES
-                ({self.__date}, {self.__customer_id})
+                ('{self.__date}', {self.__customer_id})
             """
             self.__order_id = self.dbPutData(sql)
             for item in self.__items:
@@ -220,7 +222,8 @@ def main() -> None:
     ordritm2 = OrderItem(3, 2)
     ordritm3 = OrderItem(10, 1)
 
-    ordr = Order(orderItems=[ordritm1, ordritm2, ordritm3])
+    ordr = Order()
+    ordr.setOrder(2, None)
 
     ordr.display()
 

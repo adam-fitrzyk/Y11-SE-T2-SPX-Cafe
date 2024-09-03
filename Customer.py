@@ -22,7 +22,7 @@ class Customer(SPXCafe):
             self.setCustomer()
             self.setOrders()
         else:
-            self.saveNewCustomer()
+            self.save()
     
     def getFirstName(self):
         return self.__first_name
@@ -88,15 +88,25 @@ class Customer(SPXCafe):
             self.__first_name = customerData[0]['firstName']
             self.__last_name = customerData[0]['lastName']
 
-    def saveNewCustomer(self) -> None:
-        '''Inserts a new customer entry into the customer database. '''
-        sql = f"""
-            INSERT INTO customers
-            (userName, firstName, lastName)
-            VALUES
-            ('{self.__user_name}', '{self.__first_name}', '{self.__last_name}')
-        """
-        self.__customer_id = self.dbPutData(sql)
+    def save(self) -> None:
+        '''Inserts a new customer entry into the customer database, else saves updated data. '''
+        if self.existsDB():
+            sql = f"""
+                UPDATE customers SET
+                    userName = '{self.__user_name}',
+                    firstName = '{self.__first_name}',
+                    lastName = '{self.__last_name}'
+                WHERE customerId={self.__customer_id}
+            """
+            self.dbChangeData(sql)
+        else:
+            sql = f"""
+                INSERT INTO customers
+                (userName, firstName, lastName)
+                VALUES
+                ('{self.__user_name}', '{self.__first_name}', '{self.__last_name}')
+            """
+            self.__customer_id = self.dbPutData(sql)
 
     def setOrders(self) -> None:
         self.__orders = []
@@ -113,6 +123,10 @@ class Customer(SPXCafe):
                 for orderRecord in orderData:
                     order = Order(orderId=orderRecord['orderId'])
                     self.__orders.append(order)
+
+    def addOrder(self, order:Order=None) -> None:
+        if order:
+            self.__orders.append(order)
     
     @classmethod
     def findUser(cls, user_name=None):

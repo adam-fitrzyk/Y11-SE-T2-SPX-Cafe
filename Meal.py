@@ -80,7 +80,7 @@ class Meal(SPXCafe):
     
     def __str__(self) -> str:
         '''Return a stringified version of object for print fucntions - may be same/different from display() method'''
-        return f"Meal: <{self.get_course_id():2d}-{self.get_meal_id():2d}> {self.get_meal_name().title():20s} ${self.get_meal_price():5.2f}"
+        return f"Meal: <{self.get_course_id()}-{self.get_meal_id()}> {self.get_meal_name().title():20s} ${self.get_meal_price():5.2f}"
     
     def display(self) -> None:
         '''Formal display Meal'''
@@ -142,7 +142,7 @@ class Meal(SPXCafe):
     
     def find_meal(self, searchMeal=None):
         if searchMeal:
-            if (True if partial_ratio(searchMeal, self.get_meal_name()) > 80 else False):
+            if partial_ratio(searchMeal, self.get_meal_name()) > 80:
                 return self
 
 def main() -> None:

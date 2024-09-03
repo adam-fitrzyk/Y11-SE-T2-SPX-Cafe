@@ -71,7 +71,7 @@ class Course(SPXCafe):
         if searchMeal:
             for meal in self.get_meals():
                 retmeal = meal.find_meal(searchMeal)
-                if retmeal:
+                if  retmeal:
                     meals.append(retmeal)
         return meals
     

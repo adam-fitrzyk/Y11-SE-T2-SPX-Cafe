@@ -15,7 +15,7 @@ class Cafe(SPXCafe):
 
     def setChatbot(self, waiter_name, menu_name):
         if not waiter_name:
-            waiter_name = "Andrzej"
+            waiter_name = "Agata"
         if not menu_name:
             menu_name = "Polander Plates"
         self.__chatbot = Chatbot(waiter_name, menu_name)
@@ -28,6 +28,9 @@ class Cafe(SPXCafe):
 
     def getCafeName(self) -> str:
         return self.__cafe_name
+    
+    def run(self):
+        pass
 
 
 def main() -> None:
