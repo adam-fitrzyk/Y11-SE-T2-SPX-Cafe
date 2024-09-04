@@ -78,6 +78,8 @@ class Meal(SPXCafe):
     def get_course(self):
         return self.__course
     
+    # Output related methods -------------------------------------------------------------------------------------------------------------
+    
     def __str__(self) -> str:
         '''Return a stringified version of object for print fucntions - may be same/different from display() method'''
         return f"Meal: <{self.get_course_id()}-{self.get_meal_id()}> {self.get_meal_name().title():20s} ${self.get_meal_price():5.2f}"
@@ -85,6 +87,8 @@ class Meal(SPXCafe):
     def display(self) -> None:
         '''Formal display Meal'''
         print(f" - Meal: {self.get_meal_name().title():20s} ${self.get_meal_price():5.2f}")
+
+    # Persistent data functional methods -------------------------------------------------------------------------------------------------
 
     def exists_db(self):
         '''Check if object already exists in database'''
@@ -125,7 +129,7 @@ class Meal(SPXCafe):
             self.set_meal_id(self.dbPutData(sql))
 
     @classmethod
-    def get_meals(cls, course):
+    def get_meals(cls, course) -> list:
         '''Class Method: Gets Meals for a Course object/instance - example of Aggregation'''
         sql = f"SELECT mealId, mealName, mealPrice, courseId FROM meals WHERE courseId={course.get_course_id()}"
         mealsData = SPXCafe().dbGetData(sql)

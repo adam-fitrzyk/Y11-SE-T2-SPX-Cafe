@@ -36,7 +36,7 @@ class NLPDemo():
         nouns = []
         doc = self.__nlp(speech)
         for token in doc:
-            print(f"{token.text:10s}, {token.lemma_:10s}, {token.pos_:10s}, {token.tag_:5s}, {token.dep_:10s}, {token.shape_:10s}, {token.is_alpha}, {token.is_stop}")
+            #print(f"{token.text:10s}, {token.lemma_:10s}, {token.pos_:10s}, {token.tag_:5s}, {token.dep_:10s}, {token.shape_:10s}, {token.is_alpha}, {token.is_stop}")
             if token.pos_ in ["NOUN", "PROPN"]:
                 nouns.append(token.text)
         item = " ".join(nouns)
@@ -47,7 +47,7 @@ class NLPDemo():
         nums = []
         doc = self.__nlp(speech)
         for token in doc:
-            print(f"{token.text:10s}, {token.lemma_:10s}, {token.pos_:10s}, {token.tag_:5s}, {token.dep_:10s}, {token.shape_:10s}, {token.is_alpha}, {token.is_stop}")
+            #print(f"{token.text:10s}, {token.lemma_:10s}, {token.pos_:10s}, {token.tag_:5s}, {token.dep_:10s}, {token.shape_:10s}, {token.is_alpha}, {token.is_stop}")
             if token.pos_ in ["NUM"]:
                 nums.append(token.text)
         return nums
@@ -66,10 +66,10 @@ def main():
     name = nlpDemo.getNameByEntityType(sentence)
     print(f">>> Name by Speech found: {name}")
 
-    sentence = 'Hello! I would like to order five chicken noodle soups please! Thank you!'
+    sentence = 'Hello! I would like to order chicken noodle soup once please! Thank you!'
     print(f">>> Process: {sentence}")
-    num, noun = nlpDemo.getOrderByPartsOfSpeech(sentence)
-    print(f">>> Item: {noun}, Quantity: {num}")
+    num = nlpDemo.getNumbersByPartsOfSpeech(sentence)
+    print(f">>> Item: Quantity: {num}")
 
 if __name__ == "__main__":
     main()

@@ -23,6 +23,8 @@ class Customer(SPXCafe):
             self.setOrders()
         else:
             self.save()
+
+    # Getters / Setters ------------------------
     
     def getFirstName(self):
         return self.__first_name
@@ -44,23 +46,7 @@ class Customer(SPXCafe):
     
     def setUserName(self, username):
         self.__user_name = username
-    
-    def existsDB(self):
-        '''Check if object already exists in database '''
-        retcode = False
-        sql = None
-        if self.__customer_id:
-            sql = f"SELECT count(*) AS count FROM customers WHERE customerId={self.__customer_id}"
-        elif self.__user_name:
-            sql = f"SELECT count(*) AS count FROM customers WHERE userName='{self.__user_name}'"
-        if sql:
-            countData = self.dbGetData(sql)
-            if countData:
-                count = int(countData[0]['count'])
-                if count > 0:
-                    retcode = True
-        return retcode
-    
+
     def setCustomer(self):
         '''Creates Customer Object from database info, for if customer already exists
         Arguments: either user_name or customerId'''
@@ -88,26 +74,6 @@ class Customer(SPXCafe):
             self.__first_name = customerData[0]['firstName']
             self.__last_name = customerData[0]['lastName']
 
-    def save(self) -> None:
-        '''Inserts a new customer entry into the customer database, else saves updated data. '''
-        if self.existsDB():
-            sql = f"""
-                UPDATE customers SET
-                    userName = '{self.__user_name}',
-                    firstName = '{self.__first_name}',
-                    lastName = '{self.__last_name}'
-                WHERE customerId={self.__customer_id}
-            """
-            self.dbChangeData(sql)
-        else:
-            sql = f"""
-                INSERT INTO customers
-                (userName, firstName, lastName)
-                VALUES
-                ('{self.__user_name}', '{self.__first_name}', '{self.__last_name}')
-            """
-            self.__customer_id = self.dbPutData(sql)
-
     def setOrders(self) -> None:
         self.__orders = []
         if self.existsDB():
@@ -127,6 +93,44 @@ class Customer(SPXCafe):
     def addOrder(self, order:Order=None) -> None:
         if order:
             self.__orders.append(order)
+
+    # Persistent data functional methods ---------------------------------------------------------------
+    
+    def existsDB(self) -> bool:
+        '''Check if object already exists in database '''
+        retcode = False
+        sql = None
+        if self.__customer_id:
+            sql = f"SELECT count(*) AS count FROM customers WHERE customerId={self.__customer_id}"
+        elif self.__user_name:
+            sql = f"SELECT count(*) AS count FROM customers WHERE userName='{self.__user_name}'"
+        if sql:
+            countData = self.dbGetData(sql)
+            if countData:
+                count = int(countData[0]['count'])
+                if count > 0:
+                    retcode = True
+        return retcode
+
+    def save(self) -> None:
+        '''Inserts a new customer entry into the customer database, else saves updated data. '''
+        if self.existsDB():
+            sql = f"""
+                UPDATE customers SET
+                    userName = '{self.__user_name}',
+                    firstName = '{self.__first_name}',
+                    lastName = '{self.__last_name}'
+                WHERE customerId={self.__customer_id}
+            """
+            self.dbChangeData(sql)
+        else:
+            sql = f"""
+                INSERT INTO customers
+                (userName, firstName, lastName)
+                VALUES
+                ('{self.__user_name}', '{self.__first_name}', '{self.__last_name}')
+            """
+            self.__customer_id = self.dbPutData(sql)
     
     @classmethod
     def findUser(cls, user_name=None):
@@ -143,10 +147,13 @@ class Customer(SPXCafe):
                 customerId = customerData[0]['customerId']
         return customerId
     
+    # Output related methods -------------------------------------------------------
+
     def display(self):
         print(f"Customer: <{self.__customer_id}> {self.getName()}")
 
     def displayOrders(self):
+        '''Displays all of the customer's orders in a professional manner. '''
         self.display()
         print()
         for order in self.__orders:
