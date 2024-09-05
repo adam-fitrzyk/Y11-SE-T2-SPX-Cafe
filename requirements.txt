@@ -3,3 +3,4 @@ pyttsx4
 SpeechRecognition
 rapidfuzz
 spacy
+word2number

@@ -66,7 +66,7 @@ def main():
     name = nlpDemo.getNameByEntityType(sentence)
     print(f">>> Name by Speech found: {name}")
 
-    sentence = 'Hello! I would like to order chicken noodle soup once please! Thank you!'
+    sentence = 'Hello! I would like to order chicken noodle soup ten times please! Thank you!'
     print(f">>> Process: {sentence}")
     num = nlpDemo.getNumbersByPartsOfSpeech(sentence)
     print(f">>> Item: Quantity: {num}")

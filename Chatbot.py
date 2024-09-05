@@ -5,10 +5,7 @@ from NLPDemo import NLPDemo
 from Orders import Order, OrderItem
 from rapidfuzz.utils import default_process
 from rapidfuzz.process import extract
-from word2number.w2n import american_number_system
 
-use_sr = False
-phrase_time_limit = 5
 
 class Chatbot:
 
@@ -18,6 +15,10 @@ class Chatbot:
         self.__waiter = Avatar(name)
         self.__menu = Menu(menu_name)
         self.cafe_name = cafe_name
+
+        # Changeable parameters for adjustments and bug testing
+        self.use_sr = False
+        self.phrase_time_limit = 7
 
         # Create language interpretation dictionaries (maps) for decoding user inputs
 
@@ -33,32 +34,45 @@ class Chatbot:
         }
         self.polarQ_lanMap = {
             True:   ["yes", "yeah", "okay", "alright", "sure"],
-            False:  ["no", "nope", "n't", "not"]
+            False:  ["no", "nope", "n't", "not", "I'm good"]
         }
         self.course_lanMap = self.createCourseLanguageMap()
-        self.meal_lanMap = self.createMealLanguageMap()      
+        self.meal_lanMap = self.createMealLanguageMap()  
+
+        self.word2number = {
+            'one':      1,      '1':        1,
+            'two':      2,      '2':        2,
+            'three':    3,      '3':        3,
+            'four':     4,      '4':        4,
+            'five':     5,      '5':        5,
+            'six':      6,      '6':        6,
+            'seven':    7,      '7':        7,
+            'eight':    8,      '8':        8,
+            'nine':     9,      '9':        9,
+            'ten':      10,     '10':       10
+        }
     
     # Language map constructors -----------------------------------------------------------------
 
     def createCourseLanguageMap(self) -> dict:
-        ''''''
+        '''Create a dictionary that maps phrases and words to the course or command requested. '''
         courses = [course.get_course_name() for course in self.__menu.get_courses()]
         course_lanMap = {}
         for course in courses:
             course_lanMap[course] = [course]
-        course_lanMap["checkout"] = ['complete', 'submit', 'finish', 'checkout']
+        course_lanMap["checkout"] = ['complete', 'submit', 'finish', 'check out']
         course_lanMap["abandon"]  = ["abandon", "exit", "leave", "go back"]
         return course_lanMap
     
     def createMealLanguageMap(self) -> dict:
-        ''''''
+        '''Create a dictionary that maps phrases and words to the meal and command requested. '''
         meal_lanMap = {}
         for course in self.__menu.get_courses():
             course_meal_options = {}
             for meal in course.get_meals():
                 course_meal_options[meal.get_meal_name()] = [meal.get_meal_name()]
             course_meal_options["back"]     = ["go back", "nevermind", "see courses"]
-            course_meal_options["checkout"] = ['complete', 'submit', 'finish', 'checkout']
+            course_meal_options["checkout"] = ['complete', 'submit', 'finish', 'check out']
             course_meal_options["abandon"]  = ["abandon", "exit", "leave"]
             meal_lanMap[course.get_course_name()] = course_meal_options
         return meal_lanMap
@@ -78,11 +92,11 @@ class Chatbot:
         results = extract(choice, keywords, processor=default_process)
         for result in results:
             (match, confidence, index) = result
-            # print(f"Checking: {result}")
+            #print(f"Checking: {result}")
             if confidence > max_confidence and confidence > 80:
                 max_confidence = confidence
                 matches = [match]
-            elif confidence == max_confidence:
+            elif confidence == max_confidence and confidence > 80:
                 matches.append(match)
 
         # print(f"You have matched: {', '.join(matches)} with confidence level {max_confidence}%")
@@ -105,12 +119,11 @@ class Chatbot:
         self.__waiter.say(f"Alright {self.__customer.getFirstName()}. {prompt}?")
         while response == None:
             print(f"> {prompt}?")
-            option = self.__waiter.listen('', use_sr, phrase_time_limit)
+            option = self.__waiter.listen('', self.use_sr, self.phrase_time_limit)
             response = self.matchOptions(option, lanMap)
-        self.__waiter.say(f"You chose: {response}")
         return response
     
-    # Login and registration methods ----------------------------------------------------------------------------------------------------------
+    # Login and registration methods -------------------------------------------------------------------------------
     
     def getCustomer(self) -> None:
         '''Get a customer - using username typed in for accuracy, otherwise create a new customer account. '''
@@ -118,7 +131,7 @@ class Chatbot:
         prompt = "Are you an existing customer?"
         existing_customer = None
         while existing_customer == None:
-            speech = self.__waiter.listen(prompt, use_sr, phrase_time_limit)
+            speech = self.__waiter.listen(prompt, self.use_sr, self.phrase_time_limit)
             existing_customer = self.matchOptions(speech, self.polarQ_lanMap)
         
         if existing_customer:
@@ -135,29 +148,31 @@ class Chatbot:
                     self.__waiter.say(f"I'm sorry, I couldn't find {username} in our database.")
         else:
             # Ask customer for username, first name and last name and create new customer account
+            self.__waiter.say("Ok.")
             self.welcomeCustomer()
-            username = self.__waiter.listen("Please enter your username", use_sr=False)
+            username = self.__waiter.listen("Please enter a username", use_sr=False)
             first_name = None
             last_name = None
             while not first_name:
-                inp_name = self.__waiter.listen("Please tell me your first name?", use_sr, phrase_time_limit)
+                inp_name = self.__waiter.listen("Please tell me your first name?", self.use_sr, self.phrase_time_limit)
                 first_name = self.__nlp.getNamesByPartsOfSpeech(inp_name)
             while not last_name:
-                inp_name = self.__waiter.listen("Please tell me your last name?", use_sr, phrase_time_limit)
+                inp_name = self.__waiter.listen("Please tell me your last name?", self.use_sr, self.phrase_time_limit)
                 last_name = self.__nlp.getNamesByPartsOfSpeech(inp_name)
             self.__customer = Customer(username=username, firstname=first_name, lastname=last_name)
 
     def welcomeCustomer(self, name='') -> None:
         self.__waiter.say(f"Jen dough-bray {name}! Welcome to {self.cafe_name}!") # Jen dough-bray -> Dzien dobry -> Good day
 
-    # Cafe system methods ---------------------------------------------------------------------------------------------------------------
+    # Cafe system methods ----------------------------------------------------------------------------------------------------------
 
-    def displayOrderHistory(self):
+    def displayOrderHistory(self) -> None:
         self.__waiter.say(f"Ok, {self.__customer.getFirstName()}. Let's show you your previous orders.")
-        print('-'*5 + "Order History" + '-'*5)
+        print('-'*13 + " Order History " + '-'*13)
         self.__customer.displayOrders()
 
-    def displayMenu(self):
+    def displayMenu(self) -> None:
+        '''Prints out Cafe menu, alongside providing course descriptions as requested. '''
         self.__waiter.say(f"Alright, {self.__customer.getFirstName()}. Let's show you the menu.")
         self.__menu.display()
 
@@ -168,9 +183,11 @@ class Chatbot:
             if see_descriptions:
                 prompt = "Which course would you like a description of"
                 course_enquired = self.getRequest(self.course_lanMap, prompt)
+                course = self.__menu.find_course(course_enquired)[0]
+                print()
+                course.display()
+                print()
                 match course_enquired:
-                    case "entree":
-                        self.__waiter.say("This course contains light snacks to awaken your appetite!")
                     case "starter":
                         self.__waiter.say("This course contains small meals to fill up before the main dish. I would suggest getting only one or two of these dishes.")
                     case "main":
@@ -181,7 +198,8 @@ class Chatbot:
                 asking = False
 
     def orderFood(self):
-        ''''''
+        '''Allows customer to make orders with meals and quanities and save them to database, until they wish to stop ordering.
+            Customer must have at least three items in basket until they can complete an order. '''
         self.__waiter.say(f"Dob-jeh, {self.__customer.getFirstName()}. Let's order some food.")
         ordering = True
         # Loop - until customer doesn't want to order anything
@@ -192,6 +210,9 @@ class Chatbot:
 
             # Ask which course customer wants to order from
             while asking_course:
+                print()
+                self.__menu.display_courses()
+                print()
                 asking_meal = True
                 asking = True
                 while asking:
@@ -210,7 +231,9 @@ class Chatbot:
                 while asking_meal:
                     asking = True
                     while asking:
+                        print()
                         course_choice.display()
+                        print()
                         meal_choice, quantity = self.askMeal(course_choice)
                         if meal_choice == 'ABANDON':
                             asking_course, valid_order, asking = False, False, False
@@ -226,20 +249,21 @@ class Chatbot:
                     if meal_choice in ['ABANDON', 'CHECKOUT', 'BACK']:
                         break
 
-                    print(meal_choice, quantity)
                     self.__waiter.say(f"You chose to order {self.meal_lanMap[course_choice.get_course_name()][meal_choice.get_meal_name()]} {quantity} times.")
 
-                    order.placeItem(meal_choice.get_meal_id(), quantity)
+                    order.placeItem(meal_choice, quantity)
 
                     # Ask if customer wants to order another meal
-                    prompt = "Would you like to order another meal"
+                    prompt = "Would you like to order another meal from this course"
                     order_another_meal = self.getRequest(self.polarQ_lanMap, prompt)
                     if not order_another_meal:
                         asking_meal = False
 
-            print('-'*5 + 'Basket' + '-'*5)
-            order.display()
             if valid_order:
+                print()
+                print('-'*16 + " Basket " + '-'*17)
+                order.display()
+                print()
                 prompt = "Are you sure you would like to checkout"
                 checkout = self.getRequest(self.polarQ_lanMap, prompt)
                 if checkout:
@@ -252,8 +276,7 @@ class Chatbot:
                 ordering = False
 
     def askCourse(self):
-        ''''''
-        self.__menu.display_courses()
+        '''Asks customer which course they would like to order from, or if they wish to abandon order or check out. Returns Course.'''
         prompt = "Which course would you like to order from? Otherwise you can abandon or checkout"
         choice = self.getRequest(self.course_lanMap, prompt)
         if choice == "abandon":
@@ -264,14 +287,16 @@ class Chatbot:
         return course
 
     def askMeal(self, course):
-        ''''''
+        '''Asks customer which meal they wish to order and how many, or if they wish to go back, abandon order or check out. Returns Meal and quantity. '''
         choice, number = None, None
         while not choice and not number:
             if not choice:
-                speech = self.__waiter.listen(f"Which meal would you like to order? Otherwise you can abandon or checkout?", use_sr, phrase_time_limit)
+                speech = self.__waiter.listen(f"Which meal would you like to order? Otherwise you can go back, abandon or checkout?", self.use_sr, self.phrase_time_limit)
                 choice = self.matchOptions(speech, self.meal_lanMap[course.get_course_name()])
                 number = self.__nlp.getNumbersByPartsOfSpeech(speech)
-                meal = self.__menu.find_meal(self.__nlp.getNounsByPartsOfSpeech(speech))[0]
+                meal = self.__menu.find_meal(self.__nlp.getNounsByPartsOfSpeech(speech))
+                if meal:
+                    meal = meal[0]
             if choice == "abandon":
                 return 'ABANDON', 0
             elif choice == "checkout":
@@ -280,28 +305,30 @@ class Chatbot:
                 return 'BACK', 0
             if meal and not number:
                 while not number:
-                    speech = self.__waiter.listen(f"How many of the {meal.get_meal_name()} would you like?", use_sr, phrase_time_limit)
+                    speech = self.__waiter.listen(f"How many of the {meal.get_meal_name()} would you like?", self.use_sr, self.phrase_time_limit)
                     number = self.__nlp.getNumbersByPartsOfSpeech(speech)
             if meal:
                 prompt = f"Are you sure you would like to order {meal.get_meal_name()}"
                 confirmed = self.getRequest(self.polarQ_lanMap, prompt)
                 if not confirmed:
                     choice = None
-        quantity = american_number_system[number[0]]
+        quantity = self.word2number[number[0]]
         return meal, quantity
     
-    # Main method ---------------------------------------------------------------------------------------
+    # Main method ------------------------------------------------------------------------------------------------------------------------
 
     def run(self):
-        ''''''
+        '''Main function that executes facade for customer to interact with. '''
         print(self.__waiter.name)
         self.getCustomer()
 
         #LOOP - 1) Order? 2) View Menu? 3) View Order History? 4) Leave?
         running = True
         while running:
+            print()
             prompt = "Would you like to see the menu, see previous order history, order food, or exit"
             choice = self.getRequest(self.mainLine_lanMap, prompt)
+            print()
 
             if choice == "exit":
                 self.__waiter.say(f"Thank you, {self.__customer.getFirstName()}, for ordering with {self.cafe_name}-bot today! Doh-vee-jeh-nia.")

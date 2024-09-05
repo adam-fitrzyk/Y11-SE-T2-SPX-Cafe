@@ -73,7 +73,8 @@ class Avatar:
 # This is our test harness
 def main():
     teacher = Avatar('Bob')
-    teacher.say("Doh-vee-jeh-nia.")
+
+    teacher.listen("say a number")
 
 if __name__ == "__main__":
     main()

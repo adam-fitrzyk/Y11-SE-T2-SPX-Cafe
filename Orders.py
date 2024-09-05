@@ -4,11 +4,11 @@ from Meal import Meal
 class OrderItem(SPXCafe):
     '''Order Item Object for storing single meal type of an order. Order Id must be set before OrderItem can be saved. '''
 
-    def __init__(self, mealId=None, quantity=None, orderItemId=None) -> None:
+    def __init__(self, meal:Meal=None, quantity:int=None, orderItemId:int=None) -> None:
         super().__init__()
-        self.setOrderItem(mealId, quantity, orderItemId)
+        self.setOrderItem(meal, quantity, orderItemId)
 
-    def setOrderItem(self, mealId, quantity, orderItemId) -> None:
+    def setOrderItem(self, meal, quantity, orderItemId) -> None:
         '''If orderItemId is given, retrieves data from database, otherwise sets new OrderItem instance. '''
         if orderItemId:
             self.__item_id = orderItemId
@@ -21,8 +21,8 @@ class OrderItem(SPXCafe):
             orderItemData = self.dbGetData(sql)
             if orderItemData:
                 self.__order_id = orderItemData[0]['orderId']
-                self.__meal_id = orderItemData[0]['mealId']
-                self.__meal_name = Meal(mealId=self.__meal_id).get_meal_name()
+                self.__meal = Meal(orderItemData[0]['mealId'])
+                self.__meal_name = self.__meal.get_meal_name()
                 self.__meal_price = orderItemData[0]['mealPrice']
                 self.__quantity = orderItemData[0]['quantity']
             else:
@@ -30,16 +30,12 @@ class OrderItem(SPXCafe):
         else:
             if quantity < 1:
                 print("OrderItem error: quantity must be greater than zero ")
-            elif mealId:
-                meal = Meal(mealId=mealId)
-                if meal.exists_db():
-                    self.__item_id = None
-                    self.__meal_id = mealId
-                    self.__meal_name = meal.get_meal_name()
-                    self.__quantity = quantity  
-                    self.__meal_price = meal.get_meal_price()
-                else:
-                    print('Menu Database Error: no meals with given id ')
+            elif meal:
+                self.__item_id = None
+                self.__meal = meal
+                self.__meal_name = meal.get_meal_name()
+                self.__quantity = quantity  
+                self.__meal_price = meal.get_meal_price()
 
     def setOrderId(self, orderId) -> None:
         self.__order_id = orderId
@@ -50,8 +46,8 @@ class OrderItem(SPXCafe):
     def getOrderId(self) -> int:
         return self.__order_id
 
-    def getMealId(self) -> int:
-        return self.__meal_id
+    def getMeal(self) -> int:
+        return self.__meal
     
     def getMealName(self) -> str:
         return self.__meal_name
@@ -84,7 +80,7 @@ class OrderItem(SPXCafe):
             if self.existsDB():
                 sql = f"""UPDATE orderItems SET
                     orderId={self.__order_id},
-                    mealId={self.__meal_id},
+                    mealId={self.__meal.get_meal_id()},
                     quantity={self.__quantity},
                     mealPrice={self.__meal_price}
                     WHERE orderItemId={self.__item_id}
@@ -95,7 +91,7 @@ class OrderItem(SPXCafe):
                     INSERT INTO orderItems
                     (orderId, mealId, quantity, mealPrice)
                     VALUES
-                    ({self.__order_id}, {self.__meal_id}, {self.__quantity}, {self.__meal_price})
+                    ({self.__order_id}, {self.__meal.get_meal_id()}, {self.__quantity}, {self.__meal_price})
                 """
                 self.__item_id = self.dbPutData(sql)
 
@@ -172,8 +168,8 @@ class Order(SPXCafe):
             quantity += item.getQuantity()
         return quantity
     
-    def placeItem(self, mealId, quantity) -> None:
-        self.__items.append(OrderItem(mealId, quantity))
+    def placeItem(self, meal, quantity) -> None:
+        self.__items.append(OrderItem(meal, quantity))
     
     def existsDB(self) -> bool:
         '''Checks if the order already exists in the database by id. '''
