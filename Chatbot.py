@@ -17,7 +17,7 @@ class Chatbot:
         self.cafe_name = cafe_name
 
         # Changeable parameters for adjustments and bug testing
-        self.use_sr = False
+        self.use_sr = True
         self.phrase_time_limit = 7
 
         # Create language interpretation dictionaries (maps) for decoding user inputs
